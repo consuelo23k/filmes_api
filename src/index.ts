@@ -1,6 +1,7 @@
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import { Movie, movies } from "./movie";
+import axios from "axios";
 
 const app: Application = express();
 const port = 3000;
@@ -19,6 +20,19 @@ app.post("/movies", (req: Request, res: Response) => {
 });
 
 app.get("/movies", (req: Request, res: Response) => {
+  res.json(movies);
+});
+
+app.get("/top_rated", async (req: Request, res: Response) => {
+  const response = await axios.get(
+    "https://api.themoviedb.org/3/movie/top_rated?api_key=8ed200f50a6942ca5bc8b5cdec27ff22"
+  );
+
+  const fetchedMovies = response.data.results;
+
+  movies.length = 0;
+  fetchedMovies.forEach((movie: Movie) => movies.push(movie));
+
   res.json(movies);
 });
 
