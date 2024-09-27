@@ -28,12 +28,25 @@ app.get("/top_rated", async (req: Request, res: Response) => {
     "https://api.themoviedb.org/3/movie/top_rated?api_key=8ed200f50a6942ca5bc8b5cdec27ff22"
   );
 
-  const fetchedMovies = response.data.results;
+  const fetchedMovies = response.data;
 
   movies.length = 0;
-  fetchedMovies.forEach((movie: Movie) => movies.push(movie));
+  fetchedMovies.results.forEach((movie: Movie) => movies.push(movie));
 
-  res.json(movies);
+  res.json({ results: movies });
+});
+
+app.get("/search", async (req: Request, res: Response) => {
+  const response = await axios.get(
+    "https://api.themoviedb.org/3/search/movie?api_key=8ed200f50a6942ca5bc8b5cdec27ff22&query=batman"
+  );
+
+  const fetchedMovies = response.data;
+
+  movies.length = 0;
+  fetchedMovies.results.forEach((movie: Movie) => movies.push(movie));
+
+  res.json({ results: movies });
 });
 
 app.listen(port, () => {
