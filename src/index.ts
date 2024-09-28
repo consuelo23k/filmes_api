@@ -49,6 +49,19 @@ app.get("/search", async (req: Request, res: Response) => {
   res.json({ results: movies });
 });
 
+app.get("/movie", async (req: Request, res: Response) => {
+  const response = await axios.get(
+    "https://api.themoviedb.org/3/movie/680?api_key=8ed200f50a6942ca5bc8b5cdec27ff22"
+  );
+
+  const fetchedMovie = response.data;
+
+  movies.length = 0;
+  movies.push(fetchedMovie);
+
+  res.json(fetchedMovie);
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
