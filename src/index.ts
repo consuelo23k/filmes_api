@@ -37,8 +37,10 @@ app.get("/top_rated", async (req: Request, res: Response) => {
 });
 
 app.get("/search", async (req: Request, res: Response) => {
+  const query = req.query.query as string;
+
   const response = await axios.get(
-    "https://api.themoviedb.org/3/search/movie?api_key=8ed200f50a6942ca5bc8b5cdec27ff22&query=batman"
+    `https://api.themoviedb.org/3/search/movie?api_key=8ed200f50a6942ca5bc8b5cdec27ff22&query=${query}`
   );
 
   const fetchedMovies = response.data;
@@ -50,8 +52,10 @@ app.get("/search", async (req: Request, res: Response) => {
 });
 
 app.get("/movie", async (req: Request, res: Response) => {
+  const movieId = req.query.movieId as string;
+
   const response = await axios.get(
-    "https://api.themoviedb.org/3/movie/680?api_key=8ed200f50a6942ca5bc8b5cdec27ff22"
+    `https://api.themoviedb.org/3/movie/${movieId}?api_key=8ed200f50a6942ca5bc8b5cdec27ff22`
   );
 
   const fetchedMovie = response.data;
