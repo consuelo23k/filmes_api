@@ -66,6 +66,14 @@ app.get("/movie", async (req: Request, res: Response) => {
   res.json(fetchedMovie);
 });
 
+app.post("/filmeAssistido", async (req: Request, res: Response) => {
+  const movieId = req.query.movieId as string;
+});
+
+app.delete("/filmeNaoAssistido", async (req: Request, res: Response) => {
+  const movieId = req.query.movieId as string;
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
