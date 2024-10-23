@@ -2,9 +2,37 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import { Movie, movies } from "./movie";
 import axios from "axios";
+import fs from "fs";
+import path from "path";
 
 const app: Application = express();
 const port = 3000;
+const jsonFilePath = path.join(__dirname, "filmesAssistidos.json");
+
+const ensureFileExists = () => {
+  if (!fs.existsSync(jsonFilePath)) {
+    fs.writeFileSync(jsonFilePath, "[]", "utf-8");
+  }
+};
+
+const readJsonFile = (): string[] => {
+  try {
+    ensureFileExists();
+    const data = fs.readFileSync(jsonFilePath, "utf-8");
+    return JSON.parse(data);
+  } catch (error) {
+    console.error("Erro ao ler o arquivo JSON:", error);
+    return [];
+  }
+};
+
+const writeJsonFile = (data: string[]) => {
+  try {
+    fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2), "utf-8");
+  } catch (error) {
+    console.error("Erro ao escrever no arquivo JSON:", error);
+  }
+};
 
 app.use(cors());
 app.use(express.json());
@@ -68,10 +96,55 @@ app.get("/movie", async (req: Request, res: Response) => {
 
 app.post("/filmeAssistido", async (req: Request, res: Response) => {
   const movieId = req.query.movieId as string;
+
+  if (!movieId) {
+    return res.status(400).json({ error: "O parâmetro movieId é obrigatorio" });
+  }
+
+  try {
+    let movieIds = readJsonFile();
+
+    if (!movieIds.includes(movieId)) {
+      movieIds.push(movieId);
+
+      writeJsonFile(movieIds);
+    }
+
+    res.json({ message: "Filme marcado como assistido", movieIds });
+  } catch (error) {
+    console.error("Erro ao processar a requisição:", error);
+    res.status(500).json({ error: "Erro ao salvar o filme assistido" });
+  }
 });
 
 app.delete("/filmeNaoAssistido", async (req: Request, res: Response) => {
   const movieId = req.query.movieId as string;
+
+  if (!movieId) {
+    return res.status(400).json({ error: "O parâmetro movieId é obrigatório" });
+  }
+
+  try {
+    let movieIds = readJsonFile();
+
+    if (movieIds.includes(movieId)) {
+      movieIds = movieIds.filter((id) => id !== movieId);
+
+      writeJsonFile(movieIds);
+
+      return res.json({
+        message: "Filme removido da lista de assistidos",
+        movieIds,
+      });
+    } else {
+      return res
+        .status(404)
+        .json({ error: "Filme não encontrado na lista de assistidos" });
+    }
+  } catch (error) {
+    console.error("Erro ao processar a requisição:", error);
+    res.status(500).json({ error: "Erro ao processar o filme não assistido" });
+  }
 });
 
 app.listen(port, () => {
