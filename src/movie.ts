@@ -3,6 +3,7 @@ export interface Movie {
   title: string;
   director: string;
   releaseYear: number;
+  watched: boolean;
 }
 
 export const movies: Movie[] = [];

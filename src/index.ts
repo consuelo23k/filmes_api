@@ -52,16 +52,25 @@ app.get("/movies", (req: Request, res: Response) => {
 });
 
 app.get("/top_rated", async (req: Request, res: Response) => {
-  const response = await axios.get(
-    "https://api.themoviedb.org/3/movie/top_rated?api_key=8ed200f50a6942ca5bc8b5cdec27ff22"
-  );
+  try {
+    const response = await axios.get(
+      "https://api.themoviedb.org/3/movie/top_rated?api_key=8ed200f50a6942ca5bc8b5cdec27ff22"
+    );
 
-  const fetchedMovies = response.data;
+    const fetchedMovies = response.data;
 
-  movies.length = 0;
-  fetchedMovies.results.forEach((movie: Movie) => movies.push(movie));
+    const movies: Movie[] = [];
 
-  res.json({ results: movies });
+    fetchedMovies.results.forEach((movie: Movie) => {
+      movie.watched = true;
+      movies.push(movie);
+    });
+
+    res.json({ results: movies });
+  } catch (error) {
+    console.error("Erro ao buscar filmes top-rated:", error);
+    res.status(500).json({ error: "Erro ao buscar filmes top-rated" });
+  }
 });
 
 app.get("/search", async (req: Request, res: Response) => {
@@ -74,7 +83,10 @@ app.get("/search", async (req: Request, res: Response) => {
   const fetchedMovies = response.data;
 
   movies.length = 0;
-  fetchedMovies.results.forEach((movie: Movie) => movies.push(movie));
+  fetchedMovies.results.forEach((movie: Movie) => {
+    movie.watched = true;
+    movies.push(movie);
+  });
 
   res.json({ results: movies });
 });
@@ -82,16 +94,20 @@ app.get("/search", async (req: Request, res: Response) => {
 app.get("/movie", async (req: Request, res: Response) => {
   const movieId = req.query.movieId as string;
 
-  const response = await axios.get(
-    `https://api.themoviedb.org/3/movie/${movieId}?api_key=8ed200f50a6942ca5bc8b5cdec27ff22`
-  );
+  try {
+    const tmdbResponse = await axios.get(
+      `https://api.themoviedb.org/3/movie/${movieId}?api_key=8ed200f50a6942ca5bc8b5cdec27ff22`
+    );
 
-  const fetchedMovie = response.data;
+    const movieData = tmdbResponse.data;
 
-  movies.length = 0;
-  movies.push(fetchedMovie);
+    movieData.watched = true;
 
-  res.json(fetchedMovie);
+    res.json(movieData);
+  } catch (error) {
+    console.error(`Erro ao buscar filme:`, error);
+    res.status(500).json({ error: "Erro ao buscar o filme do TMDB" });
+  }
 });
 
 app.post("/filmeAssistido", async (req: Request, res: Response) => {
