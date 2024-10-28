@@ -37,20 +37,6 @@ const writeJsonFile = (data: string[]) => {
 app.use(cors());
 app.use(express.json());
 
-app.post("/movies", (req: Request, res: Response) => {
-  const newMovie: Movie = {
-    id: movies.length + 1,
-    ...req.body,
-  };
-
-  movies.push(newMovie);
-  res.status(201).json(newMovie);
-});
-
-app.get("/movies", (req: Request, res: Response) => {
-  res.json(movies);
-});
-
 app.get("/top_rated", async (req: Request, res: Response) => {
   try {
     const response = await axios.get(
@@ -61,8 +47,15 @@ app.get("/top_rated", async (req: Request, res: Response) => {
 
     const movies: Movie[] = [];
 
+    const watchedMovies = readJsonFile();
+
     fetchedMovies.results.forEach((movie: Movie) => {
-      movie.watched = true;
+      if (watchedMovies.includes(String(movie.id))) {
+        movie.watched = true;
+      } else {
+        movie.watched = false;
+      }
+
       movies.push(movie);
     });
 
@@ -80,11 +73,18 @@ app.get("/search", async (req: Request, res: Response) => {
     `https://api.themoviedb.org/3/search/movie?api_key=8ed200f50a6942ca5bc8b5cdec27ff22&query=${query}`
   );
 
+  const watchedMovies = readJsonFile();
+
   const fetchedMovies = response.data;
 
   movies.length = 0;
   fetchedMovies.results.forEach((movie: Movie) => {
-    movie.watched = true;
+    if (watchedMovies.includes(String(movie.id))) {
+      movie.watched = true;
+    } else {
+      movie.watched = false;
+    }
+
     movies.push(movie);
   });
 
@@ -94,14 +94,24 @@ app.get("/search", async (req: Request, res: Response) => {
 app.get("/movie", async (req: Request, res: Response) => {
   const movieId = req.query.movieId as string;
 
+  if (!movieId) {
+    return res.status(400).json({ error: "O parâmetro movieId é obrigatorio" });
+  }
+
   try {
     const tmdbResponse = await axios.get(
       `https://api.themoviedb.org/3/movie/${movieId}?api_key=8ed200f50a6942ca5bc8b5cdec27ff22`
     );
 
+    const watchedMovies = readJsonFile();
+
     const movieData = tmdbResponse.data;
 
-    movieData.watched = true;
+    if (watchedMovies.includes(movieId)) {
+      movieData.watched = true;
+    } else {
+      movieData.watched = false;
+    }
 
     res.json(movieData);
   } catch (error) {
