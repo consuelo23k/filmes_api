@@ -163,9 +163,10 @@ app.delete("/filmeNaoAssistido", async (req: Request, res: Response) => {
         movieIds,
       });
     } else {
-      return res
-        .status(404)
-        .json({ error: "Filme não encontrado na lista de assistidos" });
+      return res.json({
+        message: "Filme não encontrado",
+        movieIds,
+      });
     }
   } catch (error) {
     console.error("Erro ao processar a requisição:", error);
