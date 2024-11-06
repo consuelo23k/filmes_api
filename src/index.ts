@@ -43,23 +43,20 @@ app.get("/top_rated", async (req: Request, res: Response) => {
       "https://api.themoviedb.org/3/movie/top_rated?api_key=8ed200f50a6942ca5bc8b5cdec27ff22"
     );
 
-    const fetchedMovies = response.data;
-
-    const movies: Movie[] = [];
+    const fetchedMovies = response.data.results;
 
     const watchedMovies = readJsonFile();
 
-    fetchedMovies.results.forEach((movie: Movie) => {
+    const moviesWithWatchedStatus = fetchedMovies.map((movie: Movie) => {
       if (watchedMovies.includes(String(movie.id))) {
         movie.watched = true;
       } else {
         movie.watched = false;
       }
-
-      movies.push(movie);
+      return movie;
     });
 
-    res.json({ results: movies });
+    res.json({ results: moviesWithWatchedStatus });
   } catch (error) {
     console.error("Erro ao buscar filmes top-rated:", error);
     res.status(500).json({ error: "Erro ao buscar filmes top-rated" });
@@ -73,22 +70,18 @@ app.get("/search", async (req: Request, res: Response) => {
     `https://api.themoviedb.org/3/search/movie?api_key=8ed200f50a6942ca5bc8b5cdec27ff22&query=${query}`
   );
 
+  const fetchedMovies = response.data.results;
+
   const watchedMovies = readJsonFile();
 
-  const fetchedMovies = response.data;
-
-  movies.length = 0;
-  fetchedMovies.results.forEach((movie: Movie) => {
-    if (watchedMovies.includes(String(movie.id))) {
-      movie.watched = true;
-    } else {
-      movie.watched = false;
-    }
-
-    movies.push(movie);
+  const moviesWithWatchedStatus = fetchedMovies.map((movie: Movie) => {
+    movie.watched = watchedMovies
+      .map((id) => String(id))
+      .includes(String(movie.id));
+    return movie;
   });
-
-  res.json({ results: movies });
+  console.log("search");
+  res.json({ results: moviesWithWatchedStatus });
 });
 
 app.get("/movie", async (req: Request, res: Response) => {
@@ -112,7 +105,7 @@ app.get("/movie", async (req: Request, res: Response) => {
     } else {
       movieData.watched = false;
     }
-
+    console.log("movie");
     res.json(movieData);
   } catch (error) {
     console.error(`Erro ao buscar filme:`, error);
