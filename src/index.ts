@@ -8,27 +8,28 @@ import path from "path";
 const app: Application = express();
 const port = 3000;
 const jsonFilePath = path.join(__dirname, "filmesAssistidos.json");
+const wishlistFilePath = path.join(__dirname, "wishlist.json");
 
-const ensureFileExists = () => {
-  if (!fs.existsSync(jsonFilePath)) {
-    fs.writeFileSync(jsonFilePath, "[]", "utf-8");
+const ensureFileExists = (filePath: string) => {
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, "[]", "utf-8");
   }
 };
 
-const readJsonFile = (): string[] => {
+const readJsonFile = (filePath: string): string[] => {
   try {
-    ensureFileExists();
-    const data = fs.readFileSync(jsonFilePath, "utf-8");
+    ensureFileExists(filePath);
+    const data = fs.readFileSync(filePath, "utf-8");
     return JSON.parse(data);
   } catch (error) {
-    console.error("Erro ao ler o arquivo JSON:", error);
+    console.error("Erro ao ler o arquivo json:", error);
     return [];
   }
 };
 
-const writeJsonFile = (data: string[]) => {
+const writeJsonFile = (filePath: string, data: string[]) => {
   try {
-    fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2), "utf-8");
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
   } catch (error) {
     console.error("Erro ao escrever no arquivo JSON:", error);
   }
@@ -36,6 +37,47 @@ const writeJsonFile = (data: string[]) => {
 
 app.use(cors());
 app.use(express.json());
+
+app.post("/wishlist/add", (req: Request, res: Response) => {
+  const movieId = req.query.movieId as string;
+  if (!movieId || movieId.trim() === "") {
+    return res.status(400).json({
+      error: "o parâmetro movieId é obrigatorio e não pode está vazio",
+    });
+  }
+
+  const wishlist = readJsonFile(wishlistFilePath);
+
+  if (!wishlist.includes(movieId)) {
+    wishlist.push(movieId);
+    writeJsonFile(wishlistFilePath, wishlist);
+  }
+
+  res.json({ message: "Filme adicionado á wishlist", wishlist });
+});
+
+app.delete("/wishlist/remove", (req: Request, res: Response) => {
+  const movieId = req.query.movieId as string;
+
+  if (!movieId || movieId.trim() === "") {
+    return res.status(400).json({
+      error: "O parâmetro movieId é obrigatorio e não pede estar vazio",
+    });
+  }
+  const wishlist = readJsonFile(wishlistFilePath);
+
+  const index = wishlist.indexOf(movieId);
+  if (index === -1) {
+    return res.status(404).json({
+      error: "Filme não encontrado na wishlist",
+    });
+  }
+
+  wishlist.splice(index, 1);
+  writeJsonFile(wishlistFilePath, wishlist);
+
+  res.json({ message: "Filme removido da wishlist", wishlist });
+});
 
 app.get("/top_rated", async (req: Request, res: Response) => {
   try {
@@ -45,7 +87,7 @@ app.get("/top_rated", async (req: Request, res: Response) => {
 
     const fetchedMovies = response.data.results;
 
-    const watchedMovies = readJsonFile();
+    const watchedMovies = readJsonFile(jsonFilePath);
 
     const moviesWithWatchedStatus = fetchedMovies.map((movie: Movie) => {
       if (watchedMovies.includes(String(movie.id))) {
@@ -72,7 +114,7 @@ app.get("/search", async (req: Request, res: Response) => {
 
   const fetchedMovies = response.data.results;
 
-  const watchedMovies = readJsonFile();
+  const watchedMovies = readJsonFile(jsonFilePath);
 
   const moviesWithWatchedStatus = fetchedMovies.map((movie: Movie) => {
     movie.watched = watchedMovies
@@ -96,7 +138,7 @@ app.get("/movie", async (req: Request, res: Response) => {
       `https://api.themoviedb.org/3/movie/${movieId}?api_key=8ed200f50a6942ca5bc8b5cdec27ff22`
     );
 
-    const watchedMovies = readJsonFile();
+    const watchedMovies = readJsonFile(jsonFilePath);
 
     const movieData = tmdbResponse.data;
 
@@ -121,12 +163,12 @@ app.post("/filmeAssistido", async (req: Request, res: Response) => {
   }
 
   try {
-    let movieIds = readJsonFile();
+    let movieIds = readJsonFile(jsonFilePath);
 
     if (!movieIds.includes(movieId)) {
       movieIds.push(movieId);
 
-      writeJsonFile(movieIds);
+      writeJsonFile(jsonFilePath, movieIds);
     }
 
     res.json({ message: "Filme marcado como assistido", movieIds });
@@ -144,12 +186,12 @@ app.delete("/filmeNaoAssistido", async (req: Request, res: Response) => {
   }
 
   try {
-    let movieIds = readJsonFile();
+    let movieIds = readJsonFile(jsonFilePath);
 
     if (movieIds.includes(movieId)) {
       movieIds = movieIds.filter((id) => id !== movieId);
 
-      writeJsonFile(movieIds);
+      writeJsonFile(jsonFilePath, movieIds);
 
       return res.json({
         message: "Filme removido da lista de assistidos",
