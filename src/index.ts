@@ -98,18 +98,17 @@ app.get("/top_rated", async (req: Request, res: Response) => {
 
     const fetchedMovies = response.data.results;
 
-    const watchedMovies = readJsonFile(jsonFilePath);
+    const moviesData = readMoviesData();
 
-    const moviesWithWatchedStatus = fetchedMovies.map((movie: Movie) => {
-      if (watchedMovies.includes(String(movie.id))) {
-        movie.watched = true;
-      } else {
-        movie.watched = false;
-      }
-      return movie;
+    const moviesWithStatuses = fetchedMovies.map((movie: Movie) => {
+      return {
+        ...movie,
+        watched: moviesData.filmesAssistidos.includes(String(movie.id)),
+        inwishlist: moviesData.wishlist.includes(String(movie.id)),
+      };
     });
 
-    res.json({ results: moviesWithWatchedStatus });
+    res.json({ results: moviesWithStatuses });
   } catch (error) {
     console.error("Erro ao buscar filmes top-rated:", error);
     res.status(500).json({ error: "Erro ao buscar filmes top-rated" });
@@ -119,28 +118,38 @@ app.get("/top_rated", async (req: Request, res: Response) => {
 app.get("/search", async (req: Request, res: Response) => {
   const query = req.query.query as string;
 
-  const response = await axios.get(
-    `https://api.themoviedb.org/3/search/movie?api_key=8ed200f50a6942ca5bc8b5cdec27ff22&query=${query}`
-  );
+  if (!query || query.trim() === "") {
+    return res.status(400).json({ error: "O parâmetro 'query é obrigatorio" });
+  }
 
-  const fetchedMovies = response.data.results;
+  try {
+    const response = await axios.get(
+      `https://api.themoviedb.org/3/search/movie?api_key=8ed200f50a6942ca5bc8b5cdec27ff22&query=${query}`
+    );
 
-  const watchedMovies = readJsonFile(jsonFilePath);
+    const fetchedMovies = response.data.results;
 
-  const moviesWithWatchedStatus = fetchedMovies.map((movie: Movie) => {
-    movie.watched = watchedMovies
-      .map((id) => String(id))
-      .includes(String(movie.id));
-    return movie;
-  });
-  console.log("search");
-  res.json({ results: moviesWithWatchedStatus });
+    const movieData = readMoviesData();
+
+    const moviesWithWatchedStatus = fetchedMovies.map((movie: Movie) => {
+      return {
+        ...movie,
+        watched: movieData.filmesAssistidos.includes(String(movie.id)),
+        inWishlist: movieData.wishlist.includes(String(movie.id)),
+      };
+    });
+
+    res.json({ results: moviesWithWatchedStatus });
+  } catch (error) {
+    console.error("Erro ao buscar filmes:", error);
+    res.status(500).json({ error: "Erro ao buscar filmes" });
+  }
 });
 
 app.get("/movie", async (req: Request, res: Response) => {
   const movieId = req.query.movieId as string;
 
-  if (!movieId) {
+  if (!movieId || movieId.trim() === "") {
     return res.status(400).json({ error: "O parâmetro movieId é obrigatorio" });
   }
 
@@ -149,16 +158,12 @@ app.get("/movie", async (req: Request, res: Response) => {
       `https://api.themoviedb.org/3/movie/${movieId}?api_key=8ed200f50a6942ca5bc8b5cdec27ff22`
     );
 
-    const watchedMovies = readJsonFile(jsonFilePath);
-
+    const moviesData = readMoviesData();
     const movieData = tmdbResponse.data;
 
-    if (watchedMovies.includes(movieId)) {
-      movieData.watched = true;
-    } else {
-      movieData.watched = false;
-    }
-    console.log("movie");
+    movieData.watched = moviesData.filmesAssistidos.includes(movieId);
+    movieData.inWishlist = moviesData.wishlist.includes(movieId);
+
     res.json(movieData);
   } catch (error) {
     console.error(`Erro ao buscar filme:`, error);
