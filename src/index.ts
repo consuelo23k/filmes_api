@@ -230,14 +230,6 @@ app.get("/wishlist", async (req: Request, res: Response) => {
   try {
     const moviesData = readMoviesData();
 
-    async function fetchMoviesList(movieId: string) {
-      const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=8ed200f50a6942ca5bc8b5cdec27ff22`;
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Erro ao buscar filmes");
-      const data = await response.json();
-      return data;
-    }
-
     res.json({ results: moviesData.wishlist });
   } catch (error) {
     console.error("Erro ao buscar filmes top-rated:", error);
