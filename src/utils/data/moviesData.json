@@ -1,4 +1,10 @@
 {
-  "wishlist": ["123", "680", "671"],
-  "filmesAssistidos": ["671", "680"]
+  "wishlist": [
+    "123",
+    "680"
+  ],
+  "filmesAssistidos": [
+    "671",
+    "680"
+  ]
 }
