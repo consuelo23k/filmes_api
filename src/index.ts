@@ -277,3 +277,6 @@ app.get("/wishlist/details", async (req: Request, res: Response) => {
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+
+console.log(app);
+export { app, readJsonFile, writeJsonFile };
