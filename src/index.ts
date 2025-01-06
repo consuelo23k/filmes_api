@@ -64,6 +64,13 @@ app.post("/wishlist/add", (req: Request, res: Response) => {
   });
 });
 
+app.use((req, res, next) => {
+  if (req.originalUrl.includes("/wishlist/remove/?")) {
+    return res.status(400).send("URL inválida: remova a barra extra.");
+  }
+  next();
+});
+
 app.delete("/wishlist/remove", (req: Request, res: Response) => {
   const movieId = req.query.movieId as string;
 
@@ -234,6 +241,47 @@ app.get("/wishlist", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Erro ao buscar filmes top-rated:", error);
     res.status(500).json({ error: "Erro ao buscar filmes top-rated" });
+  }
+});
+
+app.get("/filmeAssistido/details", async (req: Request, res: Response) => {
+  try {
+    const moviesData = readMoviesData();
+    const filmesAssistidos = moviesData.filmeAssistido || [];
+
+    if (filmesAssistidos.length === 0) {
+      return res.json({ message: "Ainda não tem filmes salvos", results: [] });
+    }
+
+    const fetchedMoviesDetails = async (movieId: string) => {
+      try {
+        const response = await axios.get(
+          `https://api.themoviedb.org/3/movie/${movieId}?api_key=8ed200f50a6942ca5bc8b5cdec27ff22`
+        );
+        return response.data;
+      } catch (error) {
+        console.error(
+          `Erro ao buscar detalhes do filme com ID ${movieId}:`,
+          error
+        );
+        return null;
+      }
+    };
+
+    const filmeAssistidoDetails = await Promise.all(
+      filmesAssistidos.map((movieId: string) => fetchedMoviesDetails(movieId))
+    );
+
+    const filmeAssistido: (Movie | null)[] = moviesData.filmeAssistido || [];
+
+    const validMovies = filmeAssistido.filter(
+      (movie): movie is Movie => movie !== null
+    );
+
+    res.json({ results: validMovies });
+  } catch (error) {
+    console.error("Erro ao buscar detalhes da Lista de Filmes:", error);
+    res.status(500).json({ error: "Erro ao processar a lista de filmes" });
   }
 });
 
