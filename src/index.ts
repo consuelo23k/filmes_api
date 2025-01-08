@@ -9,7 +9,6 @@ import { readMoviesData, writeMoviesData } from "./utils/moviesDataUtils";
 const app: Application = express();
 const port = 3000;
 const jsonFilePath = path.join(__dirname, "filmesAssistidos.json");
-const dataFilePath = path.join(__dirname, "data", "moviesData.json");
 
 const ensureFileExists = (filePath: string) => {
   if (!fs.existsSync(filePath)) {
@@ -62,13 +61,6 @@ app.post("/wishlist/add", (req: Request, res: Response) => {
     message: "Filme adicionado á wishlist",
     wishlist: moviesData.wishlist,
   });
-});
-
-app.use((req, res, next) => {
-  if (req.originalUrl.includes("/wishlist/remove/?")) {
-    return res.status(400).send("URL inválida: remova a barra extra.");
-  }
-  next();
 });
 
 app.delete("/wishlist/remove", (req: Request, res: Response) => {
@@ -202,7 +194,7 @@ app.post("/filmeAssistido/add", async (req: Request, res: Response) => {
   });
 });
 
-app.delete("/filmeNaoAssistido/remove", async (req: Request, res: Response) => {
+app.delete("/filmeAssistido/remove", async (req: Request, res: Response) => {
   const movieId = req.query.movieId as string;
 
   if (!movieId) {
@@ -247,7 +239,7 @@ app.get("/wishlist", async (req: Request, res: Response) => {
 app.get("/filmeAssistido/details", async (req: Request, res: Response) => {
   try {
     const moviesData = readMoviesData();
-    const filmesAssistidos = moviesData.filmeAssistido || [];
+    const filmesAssistidos = moviesData.filmesAssistidos || [];
 
     if (filmesAssistidos.length === 0) {
       return res.json({ message: "Ainda não tem filmes salvos", results: [] });
@@ -272,7 +264,7 @@ app.get("/filmeAssistido/details", async (req: Request, res: Response) => {
       filmesAssistidos.map((movieId: string) => fetchedMoviesDetails(movieId))
     );
 
-    const filmeAssistido: (Movie | null)[] = moviesData.filmeAssistido || [];
+    const filmeAssistido: (Movie | null)[] = filmeAssistidoDetails || [];
 
     const validMovies = filmeAssistido.filter(
       (movie): movie is Movie => movie !== null
