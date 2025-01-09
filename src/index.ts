@@ -9,7 +9,6 @@ import { readMoviesData, writeMoviesData } from "./utils/moviesDataUtils";
 const app: Application = express();
 const port = 3000;
 const jsonFilePath = path.join(__dirname, "filmesAssistidos.json");
-const dataFilePath = path.join(__dirname, "data", "moviesData.json");
 
 const ensureFileExists = (filePath: string) => {
   if (!fs.existsSync(filePath)) {
@@ -195,7 +194,7 @@ app.post("/filmeAssistido/add", async (req: Request, res: Response) => {
   });
 });
 
-app.delete("/filmeNaoAssistido/remove", async (req: Request, res: Response) => {
+app.delete("/filmeAssistido/remove", async (req: Request, res: Response) => {
   const movieId = req.query.movieId as string;
 
   if (!movieId) {
@@ -234,6 +233,47 @@ app.get("/wishlist", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Erro ao buscar filmes top-rated:", error);
     res.status(500).json({ error: "Erro ao buscar filmes top-rated" });
+  }
+});
+
+app.get("/filmeAssistido/details", async (req: Request, res: Response) => {
+  try {
+    const moviesData = readMoviesData();
+    const filmesAssistidos = moviesData.filmesAssistidos || [];
+
+    if (filmesAssistidos.length === 0) {
+      return res.json({ message: "Ainda não tem filmes salvos", results: [] });
+    }
+
+    const fetchedMoviesDetails = async (movieId: string) => {
+      try {
+        const response = await axios.get(
+          `https://api.themoviedb.org/3/movie/${movieId}?api_key=8ed200f50a6942ca5bc8b5cdec27ff22`
+        );
+        return response.data;
+      } catch (error) {
+        console.error(
+          `Erro ao buscar detalhes do filme com ID ${movieId}:`,
+          error
+        );
+        return null;
+      }
+    };
+
+    const filmeAssistidoDetails = await Promise.all(
+      filmesAssistidos.map((movieId: string) => fetchedMoviesDetails(movieId))
+    );
+
+    const filmeAssistido: (Movie | null)[] = filmeAssistidoDetails || [];
+
+    const validMovies = filmeAssistido.filter(
+      (movie): movie is Movie => movie !== null
+    );
+
+    res.json({ results: validMovies });
+  } catch (error) {
+    console.error("Erro ao buscar detalhes da Lista de Filmes:", error);
+    res.status(500).json({ error: "Erro ao processar a lista de filmes" });
   }
 });
 
