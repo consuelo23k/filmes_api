@@ -1,39 +1,11 @@
-import express, { Application, Request, Response } from "express";
-import cors from "cors";
-import { Movie, movies } from "./movie";
 import axios from "axios";
-import fs from "fs";
-import path from "path";
+import cors from "cors";
+import express, { Application, Request, Response } from "express";
+import { Movie } from "./movie";
 import { readMoviesData, writeMoviesData } from "./utils/moviesDataUtils";
 
 const app: Application = express();
 const port = 3000;
-const jsonFilePath = path.join(__dirname, "filmesAssistidos.json");
-
-const ensureFileExists = (filePath: string) => {
-  if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, "[]", "utf-8");
-  }
-};
-
-const readJsonFile = (filePath: string): string[] => {
-  try {
-    ensureFileExists(filePath);
-    const data = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(data);
-  } catch (error) {
-    console.error("Erro ao ler o arquivo json:", error);
-    return [];
-  }
-};
-
-const writeJsonFile = (filePath: string, data: string[]) => {
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
-  } catch (error) {
-    console.error("Erro ao escrever no arquivo JSON:", error);
-  }
-};
 
 app.use(cors());
 app.use(express.json());
@@ -198,31 +170,25 @@ app.delete("/filmeAssistido/remove", async (req: Request, res: Response) => {
   const movieId = req.query.movieId as string;
 
   if (!movieId) {
-    return res.status(400).json({ error: "O parâmetro movieId é obrigatório" });
+    return res.status(400).json({ error: "O parâmetro movieId é obrigatorio" });
   }
 
-  try {
-    let movieIds = readJsonFile(jsonFilePath);
+  const moviesData = readMoviesData();
 
-    if (movieIds.includes(movieId)) {
-      movieIds = movieIds.filter((id) => id !== movieId);
-
-      writeJsonFile(jsonFilePath, movieIds);
-
-      return res.json({
-        message: "Filme removido da lista de assistidos",
-        movieIds,
-      });
-    } else {
-      return res.json({
-        message: "Filme não encontrado",
-        movieIds,
-      });
-    }
-  } catch (error) {
-    console.error("Erro ao processar a requisição:", error);
-    res.status(500).json({ error: "Erro ao processar o filme não assistido" });
+  if (!moviesData?.filmesAssistidos) {
+    moviesData.filmesAssistidos = [];
   }
+
+  if (moviesData.filmesAssistidos.includes(movieId)) {
+    moviesData.filmesAssistidos = moviesData.filmesAssistidos.filter(
+      (id: string) => id !== movieId
+    );
+    writeMoviesData(moviesData);
+  }
+  res.json({
+    message: "Filme não encontrado",
+    filmesAssistidos: moviesData.filmesAssistidos,
+  });
 });
 
 app.get("/wishlist", async (req: Request, res: Response) => {
