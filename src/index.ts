@@ -144,6 +144,7 @@ app.get("/movie", async (req: Request, res: Response) => {
 
 app.post("/filmeAssistido/add", async (req: Request, res: Response) => {
   const movieId = req.query.movieId as string;
+  const { comment, rating } = req.body;
 
   if (!movieId) {
     return res.status(400).json({ error: "O parâmetro movieId é obrigatorio" });
@@ -155,8 +156,16 @@ app.post("/filmeAssistido/add", async (req: Request, res: Response) => {
     moviesData.filmesAssistidos = [];
   }
 
-  if (!moviesData.filmesAssistidos.includes(movieId)) {
-    moviesData.filmesAssistidos.push(movieId);
+  if (
+    !moviesData.filmesAssistidos.some(
+      (movie: Movie) => movie.id === Number(movieId)
+    )
+  ) {
+    moviesData.filmesAssistidos.push({
+      id: movieId,
+      comment: comment,
+      rating: rating,
+    });
     writeMoviesData(moviesData);
   }
 
