@@ -184,18 +184,27 @@ app.delete("/filmeAssistido/remove", async (req: Request, res: Response) => {
 
   const moviesData = readMoviesData();
 
-  if (!moviesData?.filmesAssistidos) {
-    moviesData.filmesAssistidos = [];
+  if (!moviesData.filmesAssistidos) {
+    return res
+      .status(400)
+      .json({ error: "Nenhum filme marcado como assistido" });
   }
 
-  if (moviesData.filmesAssistidos.includes(movieId)) {
-    moviesData.filmesAssistidos = moviesData.filmesAssistidos.filter(
-      (id: string) => id !== movieId
-    );
-    writeMoviesData(moviesData);
+  const movieIndex = moviesData.filmesAssistidos.findIndex(
+    (movie: Movie) => String(movie.id) === movieId
+  );
+
+  if (movieIndex === -1) {
+    return res
+      .status(404)
+      .json({ error: "Filme não encontrado na lista de assistidos" });
   }
+
+  moviesData.filmesAssistidos.splice(movieIndex, 1);
+  writeMoviesData(moviesData);
+
   res.json({
-    message: "Filme não encontrado",
+    message: "Filme desmarcado como assistido",
     filmesAssistidos: moviesData.filmesAssistidos,
   });
 });
