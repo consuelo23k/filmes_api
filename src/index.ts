@@ -245,12 +245,22 @@ app.get("/filmeAssistido/details", async (req: Request, res: Response) => {
     };
 
     const filmeAssistidoDetails = await Promise.all(
-      filmesAssistidos.map((movieId: string) => fetchedMoviesDetails(movieId))
+      filmesAssistidos.map(
+        async (movie: { id: string; comment: string; rating: number }) => {
+          const movieDetails = await fetchedMoviesDetails(movie.id);
+          if (movieDetails) {
+            return {
+              ...movieDetails,
+              comment: movie.comment,
+              rating: movie.rating,
+            };
+          }
+          return null;
+        }
+      )
     );
 
-    const filmeAssistido: (Movie | null)[] = filmeAssistidoDetails || [];
-
-    const validMovies = filmeAssistido.filter(
+    const validMovies = filmeAssistidoDetails.filter(
       (movie): movie is Movie => movie !== null
     );
 
